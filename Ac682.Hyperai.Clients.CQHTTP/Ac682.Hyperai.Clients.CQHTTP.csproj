@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <PackageId>Ac682.Hyperai.Clients.CQHTTP</PackageId>
+    <Version>2020.9.17</Version>
+    <Authors>ac682</Authors>
+    <Company>Unicore</Company>
+    <PackageDescription>Ac682.Hyperai.Clients.CQHTTP</PackageDescription>
+    <RepositoryUrl>https://github.com/ac682/ac682.Hyperai.Clients.CQHTTP</RepositoryUrl>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hyperai.Abstractions" Version="2020.8.21.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+
+</Project>
