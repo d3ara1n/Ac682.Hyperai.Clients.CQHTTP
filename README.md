@@ -1,7 +1,12 @@
 # Ac682.Hyperai.Clients.CQHTTP
 
 实际对标的是 go-cqhttp 而不是 cqhttp.
-可惜的是这两者都没有api文档可以参考(前者说看后者,后者倒了,onebot接口和实际的go-http返回值不一致),现在就是摸着石头过河,全靠一个一个试验出来.
+~~可惜的是这两者都没有api文档可以参考(前者说看后者,后者倒了,onebot接口和实际的go-http返回值不一致),现在就是摸着石头过河,全靠一个一个试验出来.~~
+[旧文档](https://richardchien.gitee.io/coolq-http-api/docs/4.15)找到了
+
+## 部署
+
+同隔壁 [Mirai Adapter](https://github.com/ac682/Ac682.Hyperai.Clients.Mirai)，`Options` 只需要填 `Host`, `Port`, `AccessToken` 就行。
 
 ## 实现与未实现
 
