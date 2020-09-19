@@ -13,7 +13,6 @@
 - [ ] 大部分
 - [ ] MessageId 获取, 因为是异步的, 所以没法在函数返回前提供 MessageId
 - [x] 小部分
-- [ ] GroupMessageEventArgs.Group仅包含Indentity,因为api只给了group_id..
 
 ### 发送事件
 
@@ -29,7 +28,7 @@
 - [ ] Flash
 - [x] At
 - [x] AtAll
-- [x] Quote
-- [ ] Source, 没有MessageId, 也意味着无法回复了
+- [x] Quote 只收不发，官方文档对`reply`的描述有出入，但不管那种，都不work
+- [x] ~~Source, 没有MessageId, 也意味着无法回复了~~现在有了
 - [ ] 所有 ContentBase 派生
 - [x] 有什么不懂就塞给 Unknown

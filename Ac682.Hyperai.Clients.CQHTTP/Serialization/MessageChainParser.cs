@@ -22,7 +22,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Serialization
                     "text" => new Plain(data.Value<string>("text")),
                     "face" => new Face(data.Value<int>("id")),
                     "image" => new Image(data.Value<string>("file"), new Uri(data.Value<string>("url"))),
-                    "at" => data.Value<string>("at") == "all" ? (MessageComponent)new AtAll() : new At(long.Parse(data.Value<string>("at"))),
+                    "at" => data.Value<string>("qq") == "all" ? (MessageComponent)new AtAll() : new At(long.Parse(data.Value<string>("qq"))),
                     "reply" => new Quote(long.Parse(data.Value<string>("id"))),
 
                     _ => new Unknown(obj.ToString()),

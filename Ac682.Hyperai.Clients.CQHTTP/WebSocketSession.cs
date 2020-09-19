@@ -10,10 +10,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
+using Ext = Ac682.Hyperai.Clients.CQHTTP.DataObjects.Extensions;
 using System.Threading.Tasks;
+using Wupoo;
+using Hyperai.Messages.ConcreteModels;
 
 namespace Ac682.Hyperai.Clients.CQHTTP
 {
@@ -21,16 +25,19 @@ namespace Ac682.Hyperai.Clients.CQHTTP
     {
         public ApiClientConnectionState State => client == null && client.State == WebSocketState.Open ? ApiClientConnectionState.Disconnected : ApiClientConnectionState.Connected;
         private readonly string _host;
-        private readonly int _port;
+        private readonly int _httpPort;
+        private readonly int _websocketPort;
         private readonly string _accessToken;
 
         private ClientWebSocket client;
         private JsonSerializerSettings serializerSettings;
+        private WapooOptions wapooOptions;
 
-        public WebSocketSession(string host, int port, string accessToken)
+        public WebSocketSession(string host, int httpPort, int websocketPort, string accessToken)
         {
             _host = host;
-            _port = port;
+            _httpPort = httpPort;
+            _websocketPort = websocketPort;
             _accessToken = accessToken;
 
             serializerSettings = new JsonSerializerSettings()
@@ -39,12 +46,19 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 NullValueHandling = NullValueHandling.Ignore
             };
             serializerSettings.Converters.Add(new MessageChainJsonConverter());
+
+            wapooOptions = new WapooOptions()
+            {
+                IgnoreMediaTypeCheck = true,
+                Authentication = new AuthenticationHeaderValue("Bearer", _accessToken),
+                JsonSerializerOptions = serializerSettings,
+            };
         }
 
         public void Connect()
         {
             client = new ClientWebSocket();
-            client.ConnectAsync(new Uri($"ws://{_host}:{_port}/?access_token={_accessToken}"), CancellationToken.None).Wait();
+            client.ConnectAsync(new Uri($"ws://{_host}:{_websocketPort}/event?access_token={_accessToken}"), CancellationToken.None).Wait();
         }
 
         public void ReceiveEvents(Action<GenericEventArgs> callback)
@@ -95,13 +109,11 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                                 DtoGroupMessage message = JsonConvert.DeserializeObject<DtoGroupMessage>(json, serializerSettings);
                                 GroupMessageEventArgs args = new GroupMessageEventArgs()
                                 {
-                                    Message = message.Message,
+                                    Message = new MessageChain(message.Message.Append(new Source(message.Message_Id))),
                                     Time = DateTime.Now,
                                 };
-                                args.Group = new Group()
-                                {
-                                    Identity = message.GroupId,
-                                };
+
+                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
                                 args.User = message.Sender.ToMember(args.Group);
                                 return args;
                             }
@@ -110,7 +122,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                                 DtoFriendMessage message = JsonConvert.DeserializeObject<DtoFriendMessage>(json, serializerSettings);
                                 FriendMessageEventArgs args = new FriendMessageEventArgs()
                                 {
-                                    Message = message.Message,
+                                    Message = new MessageChain(message.Message.Append(new Source(message.Message_Id))),
                                     Time = DateTime.Now
                                 };
                                 args.User = message.Sender.ToFriend();
@@ -125,28 +137,87 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             }
         }
 
-        public async Task SendFriendMessageAsync(Friend friend, MessageChain message)
+        public async Task<long> SendFriendMessageAsync(Friend friend, MessageChain message)
         {
-            await SendRawAsync("send_private_msg", new { user_id = friend.Identity, message = message });
+            long messageId = -1;
+            await Request($"send_private_msg")
+                .WithJsonBody(new
+                {
+                    user_id = friend.Identity,
+                    message = message.AsReadable()
+                })
+                .ForJsonResult<JObject>((obj) => messageId = obj["data"].Value<long>("message_id"))
+                .FetchAsync();
+            return messageId;
         }
 
-        public async Task SendGroupMessageAsync(Group group, MessageChain message)
+        public async Task<long> SendGroupMessageAsync(Group group, MessageChain message)
         {
-            await SendRawAsync("send_group_msg", new { group_id = group.Identity, message = message });
+            long messageId = -1;
+            await Request("send_group_msg")
+                .WithJsonBody(new
+                {
+                    group_id = group.Identity,
+                    message = message.AsReadable()
+                })
+                .ForJsonResult<JObject>(obj => messageId = obj["data"].Value<long>("message_id"))
+                .FetchAsync();
+            return messageId;
         }
 
-        public async Task SendRawAsync(string action, object body)
+        private async Task<Group> GetGroupInfoAsync(long id)
         {
-            GenericRequest<object> req = new GenericRequest<object>()
-            {
-                Action = action,
-                Echo = Guid.NewGuid().ToString(),
-                Params = body
-            };
+            Group result = new Group() { Identity = id };
+            Task task1 = Request("get_group_info")
+                .WithJsonBody(new
+                {
+                    group_id = id,
+                })
+                .ForJsonResult<JObject>(obj =>
+                {
+                    result.Name = obj["data"].Value<string>("group_name");
+                })
+                .FetchAsync();
+            Task<IEnumerable<Member>> task2 = GetGroupMembersAsync(result);
+            await task1;
+            result.Members = new Lazy<IEnumerable<Member>>(await task2);
+            return result;
+        }
 
-            ArraySegment<byte> buffer = WebSocket.CreateClientBuffer(1024, 1024);
-            string text = JsonConvert.SerializeObject(req, serializerSettings);
-            await client.SendAsync(Encoding.UTF8.GetBytes(text), WebSocketMessageType.Text, true, CancellationToken.None);
+        private async Task<IEnumerable<Member>> GetGroupMembersAsync(Group group)
+        {
+            List<Member> members = new List<Member>();
+            await Request("get_group_member_list")
+                .WithJsonBody(new
+                {
+                    group_id = group.Identity
+                })
+                .ForJsonResult<JArray>(arr =>
+                {
+                    foreach (JObject obj in arr)
+                    {
+                        Member member = new Member()
+                        {
+                            Group = new Lazy<Group>(group),
+                            Identity = obj.Value<long>("user_id"),
+                            DisplayName = obj.Value<string>("card"),
+                            Nickname = obj.Value<string>("nickname"),
+                            Title = obj.Value<string>("title"),
+                            Role = Ext.OfRole(obj.Value<string>("role")),
+                        };
+                        members.Add(member);
+                    }
+                })
+                .FetchAsync();
+
+            return members;
+        }
+
+
+
+        private Wapoo Request(string action)
+        {
+            return new Wapoo(wapooOptions, $"http://{_host}:{_httpPort}/{action}").ViaPost();
         }
 
         public void Disconnect()

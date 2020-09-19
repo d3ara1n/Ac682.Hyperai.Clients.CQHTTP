@@ -14,6 +14,6 @@ namespace Ac682.Hyperai.Clients.CQHTTP.DataObjects
         public string Role { get; set; }
         public string Sex { get; set; }
         public string Title { get; set; }
-        public long UserId { get; set; }
+        public long User_Id { get; set; }
     }
 }

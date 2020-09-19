@@ -15,10 +15,10 @@ namespace Ac682.Hyperai.Clients.CQHTTP.DataObjects
         /// 反正都是0
         /// </summary>
         public uint Font { get; set; }
-        public long GroupId { get; set; }
+        public long Group_Id { get; set; }
         public MessageChain Message { get; set; }
-        public long MessageId { get; set; }
+        public long Message_Id { get; set; }
         public DtoGroupSender Sender { get; set; }
-        public long UserId { get; set; }
+        public long User_Id { get; set; }
     }
 }

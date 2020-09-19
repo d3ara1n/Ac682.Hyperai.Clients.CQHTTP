@@ -20,7 +20,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
         public CQClient(CQClientOptions options)
         {
             _options = options;
-            session = new WebSocketSession(options.Host, options.Port, options.AccessToken);
+            session = new WebSocketSession(options.Host, options.HttpPort, options.WebSocketPort, options.AccessToken);
         }
 
 

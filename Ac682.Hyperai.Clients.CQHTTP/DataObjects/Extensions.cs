@@ -13,17 +13,23 @@ namespace Ac682.Hyperai.Clients.CQHTTP.DataObjects
             {
                 DisplayName = string.IsNullOrEmpty(target.Card) ? target.Nickname : target.Card,
                 Group = new Lazy<Group>(group),
-                Identity = target.UserId,
+                Identity = target.User_Id,
                 Title = target.Title,
                 Nickname = target.Nickname,
-                // TODO: more roles
-                Role = target.Role switch
-                {
-                    "owner" => GroupRole.Owner,
-                    _ => GroupRole.Member
-                },
+                Role = OfRole(target.Role),
             };
             return member;
+        }
+
+        public static GroupRole OfRole(string name)
+        {
+            return name switch
+            {
+                "owner" => GroupRole.Owner,
+                "admin" => GroupRole.Administrator,
+                "member" => GroupRole.Member,
+                _ => GroupRole.Member
+            };
         }
 
         public static Friend ToFriend(this DtoFriendSender target)
@@ -31,7 +37,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP.DataObjects
             Friend friend = new Friend()
             {
                 Nickname = target.Nickname,
-                Identity = target.UserId,
+                Identity = target.User_Id,
                 Remark = target.Nickname,
             };
             return friend;

@@ -22,7 +22,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
         public override void WriteJson(JsonWriter writer, [AllowNull] MessageChain value, JsonSerializer serializer)
         {
             string text = formatter.Format(value);
-            writer.WriteRaw(text);
+            writer.WriteRawValue(text);
         }
     }
 }
