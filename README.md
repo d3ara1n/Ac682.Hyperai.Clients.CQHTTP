@@ -6,18 +6,31 @@
 
 ## 部署
 
-同隔壁 [Mirai Adapter](https://github.com/ac682/Ac682.Hyperai.Clients.Mirai)，`Options` 只需要填 `Host`, `Port`, `AccessToken` 就行。
+同隔壁 [Mirai Adapter](https://github.com/ac682/Ac682.Hyperai.Clients.Mirai)，`Options` 只需要填 `Host`, `HttpPort`, `WebSocketPort`, `AccessToken` 就行。
+
+**依赖 Wupoo 包**
+
+从 nuget 上下载一个然后丢尽 `plugins` 文件夹就行了
 
 ## 实现与未实现
 
 - [ ] 大部分
-- [ ] MessageId 获取, 因为是异步的, 所以没法在函数返回前提供 MessageId
+- [x] MessageId 获取, ~~因为是异步的, 所以没法在函数返回前提供 MessageId~~换成同步http发送了
 - [x] 小部分
+
+
+### 接收事件
+
+- [x] 私聊消息
+- [x] 群聊消息
+- [ ] 其他一概未知(未测出来
 
 ### 发送事件
 
 - [x] 私聊消息
 - [x] 群聊消息
+- [x] 私聊消息撤回
+- [x] 群聊消息撤回
 - [ ] 其他所有
 
 ## 消息元素

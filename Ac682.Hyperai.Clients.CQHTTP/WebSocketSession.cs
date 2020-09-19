@@ -18,6 +18,7 @@ using Ext = Ac682.Hyperai.Clients.CQHTTP.DataObjects.Extensions;
 using System.Threading.Tasks;
 using Wupoo;
 using Hyperai.Messages.ConcreteModels;
+using System.Dynamic;
 
 namespace Ac682.Hyperai.Clients.CQHTTP
 {
@@ -165,7 +166,79 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             return messageId;
         }
 
-        private async Task<Group> GetGroupInfoAsync(long id)
+        public async Task RecallMessageAsync(long messageId)
+        {
+            await Request("delete_msg")
+                .WithJsonBody(new { message_id = messageId})
+                .FetchAsync();
+        }
+
+        public async Task<Self> GetSelfInfoAsync()
+        {
+            Self self = new Self();
+            await Request("get_login_info")
+                .ForJsonResult<JObject>(obj =>
+                {
+                    self.Identity = obj["data"].Value<long>("user_id");
+                    self.Nickname = obj["data"].Value<string>("nickname");
+                })
+                .FetchAsync();
+            self.Groups = new Lazy<IEnumerable<Group>>(() => GetGroupsAsync().GetAwaiter().GetResult());
+            self.Friends = new Lazy<IEnumerable<Friend>>(() => GetFriendsAsync().GetAwaiter().GetResult());
+
+            return self;
+        }
+
+        public async Task<IEnumerable<Friend>> GetFriendsAsync()
+        {
+            List<Friend> friends = new List<Friend>();
+            await Request("get_friend_list")
+                .ForJsonResult<JObject>(obj =>
+                {
+                    foreach(JObject f in obj.Value<JArray>("data"))
+                    {
+                        Friend friend = new Friend()
+                        {
+                            Identity = f.Value<long>("user_id"),
+                            Nickname = f.Value<string>("nickname"),
+                            Remark = f.Value<string>("remark")
+                        };
+                        friends.Add(friend);
+                    }
+                })
+                .FetchAsync();
+            return friends;
+        }
+
+        public async Task<Friend> GetFriendInfoAsync(long id)
+        {
+            return (await GetFriendsAsync()).FirstOrDefault(x => x.Identity == id);
+        }
+
+        public async Task<IEnumerable<Group>> GetGroupsAsync()
+        {
+            List<Group> groups = new List<Group>();
+            await Request("get_group_list")
+                .ForJsonResult<JObject>(obj =>
+                {
+                    foreach (JObject g in obj.Value<JArray>("data"))
+                    {
+                        Group group = new Group()
+                        {
+                            Identity = g.Value<long>("group_id"),
+                            Name = g.Value<string>("group_name")
+                        };
+                        group.Members = new Lazy<IEnumerable<Member>>(() => GetGroupMembersAsync(group).GetAwaiter().GetResult());
+                        group.Owner = new Lazy<Member>(() => group.Members.Value.FirstOrDefault(x => x.Role == GroupRole.Owner));
+                        groups.Add(group);
+                    }
+                })
+                .FetchAsync();
+
+            return groups;
+        }
+
+        public async Task<Group> GetGroupInfoAsync(long id)
         {
             Group result = new Group() { Identity = id };
             Task task1 = Request("get_group_info")
@@ -184,7 +257,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             return result;
         }
 
-        private async Task<IEnumerable<Member>> GetGroupMembersAsync(Group group)
+        public async Task<IEnumerable<Member>> GetGroupMembersAsync(Group group)
         {
             List<Member> members = new List<Member>();
             await Request("get_group_member_list")
@@ -192,18 +265,18 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 {
                     group_id = group.Identity
                 })
-                .ForJsonResult<JArray>(arr =>
+                .ForJsonResult<JObject>(obj =>
                 {
-                    foreach (JObject obj in arr)
+                    foreach (JObject mem in obj.Value<JArray>("data"))
                     {
                         Member member = new Member()
                         {
                             Group = new Lazy<Group>(group),
-                            Identity = obj.Value<long>("user_id"),
-                            DisplayName = obj.Value<string>("card"),
-                            Nickname = obj.Value<string>("nickname"),
-                            Title = obj.Value<string>("title"),
-                            Role = Ext.OfRole(obj.Value<string>("role")),
+                            Identity = mem.Value<long>("user_id"),
+                            DisplayName = mem.Value<string>("card"),
+                            Nickname = mem.Value<string>("nickname"),
+                            Title = mem.Value<string>("title"),
+                            Role = Ext.OfRole(mem.Value<string>("role")),
                         };
                         members.Add(member);
                     }
@@ -213,7 +286,29 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             return members;
         }
 
-
+        public async Task<Member> GetMemnerInfoAsync(Group group, long id)
+        {
+            Member member = new Member()
+            {
+                Identity = id,
+                Group = new Lazy<Group>(group)
+            };
+            await Request("get_group_member_info")
+                .WithJsonBody(new
+                {
+                    group_id = group.Identity,
+                    user_id = id
+                })
+                .ForJsonResult<JObject>(obj =>
+                {
+                    member.DisplayName = obj["data"].Value<string>("card");
+                    member.Nickname = obj["data"].Value<string>("nickname");
+                    member.Title = obj["data"].Value<string>("title");
+                    member.Role = Ext.OfRole(obj["data"].Value<string>("role"));
+                })
+                .FetchAsync();
+            return member;
+        }
 
         private Wapoo Request(string action)
         {
@@ -222,7 +317,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 
         public void Disconnect()
         {
-            client.CloseAsync(WebSocketCloseStatus.Empty, "dead.", CancellationToken.None).Wait();
+            client.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None).Wait();
         }
 
         bool isDisposed = false;

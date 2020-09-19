@@ -1,5 +1,6 @@
 ﻿using Hyperai.Events;
 using Hyperai.Receipts;
+using Hyperai.Relations;
 using Hyperai.Services;
 using System;
 using System.Collections.Generic;
@@ -63,10 +64,33 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             handlers.Add((typeof(TEventArgs), handler));
         }
 
-        public Task<T> RequestAsync<T>(T model)
+        public async Task<T> RequestAsync<T>(T model)
         {
-            throw new NotImplementedException();
+            switch (model)
+            {
+                case Member member:
+                    {
+                        Group group = await session.GetGroupInfoAsync(member.Group.Value.Identity);
+                        return ChangeType<T>(await session.GetMemnerInfoAsync(group, member.Identity)) ?? model;
+                    }
+                case Group group:
+                    {
+                        return ChangeType<T>(await session.GetGroupInfoAsync(group.Identity)) ?? model;
+                    }
+                case Friend friend:
+                    {
+                        return ChangeType<T>(await session.GetFriendInfoAsync(friend.Identity)) ?? model;
+                    }
+                case Self self:
+                    {
+                        return ChangeType<T>(await session.GetSelfInfoAsync()) ?? model;
+                    }
+                default:
+                    return model;
+            }
         }
+
+        private T ChangeType<T>(object obj) => (T)Convert.ChangeType(obj, typeof(T));
 
         [Obsolete]
         public string RequestRawAsync(string resource)
@@ -83,6 +107,12 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                     break;
                 case GroupMessageEventArgs gme:
                     await session.SendGroupMessageAsync(gme.Group, gme.Message);
+                    break;
+                case GroupRecallEventArgs gre:
+                    await session.RecallMessageAsync(gre.MessageId);
+                    break;
+                case FriendRecallEventArgs fre:
+                    await session.RecallMessageAsync(fre.MessageId);
                     break;
             }
             return null;
