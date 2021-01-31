@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <PackageId>Ac682.Hyperai.Clients.CQHTTP</PackageId>
-    <Version>2020.9.20</Version>
+    <Version>2021.1.31</Version>
     <Authors>ac682</Authors>
     <Company>Unicore</Company>
     <PackageDescription>Ac682.Hyperai.Clients.CQHTTP</PackageDescription>
@@ -15,7 +15,7 @@
   <ItemGroup>
     <PackageReference Include="Hyperai.Abstractions" Version="2020.9.19" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="Wupoo" Version="1.0.0" />
+    <PackageReference Include="Wupoo" Version="1.0.1" />
   </ItemGroup>
 
 </Project>
