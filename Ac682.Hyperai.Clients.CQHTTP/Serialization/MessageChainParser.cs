@@ -14,14 +14,14 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Serialization
         {
             MessageChainBuilder builder = new MessageChainBuilder();
             JArray array = JsonConvert.DeserializeObject<JArray>(text);
-            foreach(JObject obj in array)
+            foreach (JObject obj in array)
             {
                 JToken data = obj["data"];
                 MessageComponent component = obj.Value<string>("type") switch
                 {
                     "text" => new Plain(data.Value<string>("text")),
                     "face" => new Face(data.Value<int>("id")),
-                    "image" => new Image(data.Value<string>("file"), new Uri(data.Value<string>("url"))),
+                    "image" => new Image(data.Value<string>("file"), new Uri(data.Value<string>("url") != null ? data.Value<string>("url") : string.Format("http://gchat.qpic.cn/gchatpic_new/0/0-0-{}/0?term=2", data.Value<string>("url")))),
                     "at" => data.Value<string>("qq") == "all" ? (MessageComponent)new AtAll() : new At(long.Parse(data.Value<string>("qq"))),
                     "reply" => new Quote(long.Parse(data.Value<string>("id"))),
 
