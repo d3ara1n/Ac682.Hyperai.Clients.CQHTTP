@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using Wupoo;
 using Hyperai.Messages.ConcreteModels;
 using System.Dynamic;
+using Ac682.Hyperai.Clients.CQHTTP.Serialization;
 
 namespace Ac682.Hyperai.Clients.CQHTTP
 {
@@ -33,6 +34,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
         private ClientWebSocket client;
         private JsonSerializerSettings serializerSettings;
         private WapooOptions wapooOptions;
+        private IMessageChainParser parser = new MessageChainParser();
 
         public WebSocketSession(string host, int httpPort, int websocketPort, string accessToken)
         {
@@ -169,7 +171,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
         public async Task RecallMessageAsync(long messageId)
         {
             await Request("delete_msg")
-                .WithJsonBody(new { message_id = messageId})
+                .WithJsonBody(new { message_id = messageId })
                 .FetchAsync();
         }
 
@@ -195,7 +197,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             await Request("get_friend_list")
                 .ForJsonResult<JObject>(obj =>
                 {
-                    foreach(JObject f in obj.Value<JArray>("data"))
+                    foreach (JObject f in obj.Value<JArray>("data"))
                     {
                         Friend friend = new Friend()
                         {
@@ -308,6 +310,22 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 })
                 .FetchAsync();
             return member;
+        }
+
+        public async Task<MessageChain> GetMessageByIdAsync(long id)
+        {
+            MessageChain chain = null;
+            await Request("get_msg")
+                .WithJsonBody(new
+                {
+                    message_id = id
+                })
+                .ForJsonResult<JObject>(obj =>
+                {
+                    chain = parser.Parse(obj["data"].Value<JArray>("message").ToString());
+                })
+                .FetchAsync();
+            return chain ?? MessageChain.Construct(new Source(id));
         }
 
         private Wapoo Request(string action)

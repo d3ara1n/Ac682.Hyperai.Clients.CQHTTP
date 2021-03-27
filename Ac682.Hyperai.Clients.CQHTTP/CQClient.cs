@@ -1,4 +1,6 @@
 ﻿using Hyperai.Events;
+using Hyperai.Messages;
+using Hyperai.Messages.ConcreteModels;
 using Hyperai.Receipts;
 using Hyperai.Relations;
 using Hyperai.Services;
@@ -39,6 +41,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 
         public void Dispose()
         {
+            Disconnect();
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -84,6 +87,10 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 case Self self:
                     {
                         return ChangeType<T>(await session.GetSelfInfoAsync()) ?? model;
+                    }
+                case MessageChain message when message.Any(x => x is Source):
+                    {
+                        return ChangeType<T>(await session.GetMessageByIdAsync(((Source)message.First(x => x is Source)).MessageId)) ?? model;
                     }
                 default:
                     return model;
