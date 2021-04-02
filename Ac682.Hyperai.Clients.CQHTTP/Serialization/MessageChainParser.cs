@@ -21,7 +21,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Serialization
                 {
                     "text" => new Plain(data.Value<string>("text")),
                     "face" => new Face(data.Value<int>("id")),
-                    "image" => new Image(data.Value<string>("file"), new Uri(data.Value<string>("url") != null ? data.Value<string>("url") : string.Format("http://gchat.qpic.cn/gchatpic_new/0/0-0-{}/0?term=2", data.Value<string>("url")))),
+                    "image" => new Image(data.Value<string>("file"), new Uri(data.Value<string>("url") != null ? data.Value<string>("url") : string.Format("http://gchat.qpic.cn/gchatpic_new/0/0-0-{0}/0?term=2", data.Value<string>("file").Replace(".image", "").ToUpper()))),
                     "at" => data.Value<string>("qq") == "all" ? (MessageComponent)new AtAll() : new At(long.Parse(data.Value<string>("qq"))),
                     "reply" => new Quote(long.Parse(data.Value<string>("id"))),
 
