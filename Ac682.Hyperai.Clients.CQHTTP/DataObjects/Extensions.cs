@@ -1,7 +1,5 @@
-﻿using Hyperai.Relations;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
+using Hyperai.Relations;
 
 namespace Ac682.Hyperai.Clients.CQHTTP.DataObjects
 {
@@ -9,14 +7,14 @@ namespace Ac682.Hyperai.Clients.CQHTTP.DataObjects
     {
         public static Member ToMember(this DtoGroupSender target, Group group)
         {
-            Member member = new Member()
+            var member = new Member
             {
                 DisplayName = string.IsNullOrEmpty(target.Card) ? target.Nickname : target.Card,
                 Group = new Lazy<Group>(group),
                 Identity = target.User_Id,
                 Title = target.Title,
                 Nickname = target.Nickname,
-                Role = OfRole(target.Role),
+                Role = OfRole(target.Role)
             };
             return member;
         }
@@ -34,11 +32,11 @@ namespace Ac682.Hyperai.Clients.CQHTTP.DataObjects
 
         public static Friend ToFriend(this DtoFriendSender target)
         {
-            Friend friend = new Friend()
+            var friend = new Friend
             {
                 Nickname = target.Nickname,
                 Identity = target.User_Id,
-                Remark = target.Nickname,
+                Remark = target.Nickname
             };
             return friend;
         }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Ac682.Hyperai.Clients.CQHTTP
+﻿namespace Ac682.Hyperai.Clients.CQHTTP
 {
     public class GenericResponse<TData>
     {

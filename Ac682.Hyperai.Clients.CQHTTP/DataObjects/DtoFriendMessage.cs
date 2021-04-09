@@ -1,7 +1,4 @@
 ﻿using Hyperai.Messages;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Ac682.Hyperai.Clients.CQHTTP.DataObjects
 {

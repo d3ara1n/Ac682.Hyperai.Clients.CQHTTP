@@ -1,23 +1,23 @@
-﻿using Hyperai.Events;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Hyperai.Events;
 using Hyperai.Messages;
 using Hyperai.Messages.ConcreteModels;
 using Hyperai.Receipts;
 using Hyperai.Relations;
 using Hyperai.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Ac682.Hyperai.Clients.CQHTTP
 {
-    public class CQClient : IApiClient
+    public sealed class CQClient : IApiClient
     {
-        public ApiClientConnectionState State => session == null ? ApiClientConnectionState.Disconnected : session.State;
-        private WebSocketSession session;
-        private readonly List<(Type, object)> handlers = new List<(Type, object)>();
         private readonly CQClientOptions _options;
+        private readonly List<(Type, object)> handlers = new();
+
+        private bool isDisposed;
+        private WebSocketSession session;
 
 
         public CQClient(CQClientOptions options)
@@ -25,6 +25,9 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             _options = options;
             session = new WebSocketSession(options.Host, options.HttpPort, options.WebSocketPort, options.AccessToken);
         }
+
+        public ApiClientConnectionState State =>
+            session?.State ?? ApiClientConnectionState.Disconnected;
 
 
         public void Connect()
@@ -46,20 +49,9 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             GC.SuppressFinalize(this);
         }
 
-        private bool isDisposed = false;
-
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposed && isDisposing)
-            {
-                isDisposed = true;
-                session.Dispose();
-            }
-        }
-
         public void Listen()
         {
-            session.ReceiveEvents((args) => InvokeHandler(args));
+            session.ReceiveEvents(InvokeHandler);
         }
 
         public void On<TEventArgs>(IEventHandler<TEventArgs> handler) where TEventArgs : GenericEventArgs
@@ -72,37 +64,32 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             switch (model)
             {
                 case Member member:
-                    {
-                        Group group = await session.GetGroupInfoAsync(member.Group.Value.Identity);
-                        return ChangeType<T>(await session.GetMemnerInfoAsync(group, member.Identity)) ?? model;
-                    }
+                {
+                    var group = await session.GetGroupInfoAsync(member.Group.Value.Identity);
+                    return ChangeType<T>(await session.GetMemnerInfoAsync(group, member.Identity)) ?? model;
+                }
                 case Group group:
-                    {
-                        return ChangeType<T>(await session.GetGroupInfoAsync(group.Identity)) ?? model;
-                    }
+                {
+                    return ChangeType<T>(await session.GetGroupInfoAsync(group.Identity)) ?? model;
+                }
                 case Friend friend:
-                    {
-                        return ChangeType<T>(await session.GetFriendInfoAsync(friend.Identity)) ?? model;
-                    }
+                {
+                    return ChangeType<T>(await session.GetFriendInfoAsync(friend.Identity)) ?? model;
+                }
                 case Self self:
-                    {
-                        return ChangeType<T>(await session.GetSelfInfoAsync()) ?? model;
-                    }
+                {
+                    return ChangeType<T>(await session.GetSelfInfoAsync()) ?? model;
+                }
                 case MessageChain message when message.Any(x => x is Source):
-                    {
-                        return ChangeType<T>(await session.GetMessageByIdAsync(((Source)message.First(x => x is Source)).MessageId)) ?? model;
-                    }
+                {
+                    return ChangeType<T>(
+                               await session.GetMessageByIdAsync(((Source) message.First(x => x is Source))
+                                   .MessageId)) ??
+                           model;
+                }
                 default:
                     return model;
             }
-        }
-
-        private T ChangeType<T>(object obj) => (T)Convert.ChangeType(obj, typeof(T));
-
-        [Obsolete]
-        public string RequestRawAsync(string resource)
-        {
-            throw new NotImplementedException();
         }
 
         public async Task<GenericReceipt> SendAsync<TArgs>(TArgs args) where TArgs : GenericEventArgs
@@ -122,7 +109,28 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                     await session.RecallMessageAsync(fre.MessageId);
                     break;
             }
+
             return null;
+        }
+
+        private void Dispose(bool isDisposing)
+        {
+            if (!isDisposed && isDisposing)
+            {
+                isDisposed = true;
+                session.Dispose();
+            }
+        }
+
+        private T ChangeType<T>(object obj)
+        {
+            return (T) Convert.ChangeType(obj, typeof(T));
+        }
+
+        [Obsolete]
+        public string RequestRawAsync(string resource)
+        {
+            throw new NotImplementedException();
         }
 
         [Obsolete]
@@ -133,10 +141,8 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 
         private void InvokeHandler(GenericEventArgs args)
         {
-            foreach (object handler in handlers.Where(x => x.Item1.IsAssignableFrom(args.GetType())).Select(x => x.Item2))
-            {
-                handler.GetType().GetMethod("Handle").Invoke(handler, new object[] { args });
-            }
+            foreach (var handler in handlers.Where(x => x.Item1.IsInstanceOfType(args)).Select(x => x.Item2))
+                handler.GetType().GetMethod("Handle")?.Invoke(handler, new object[] {args});
         }
     }
 }
