@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Hyperai.Messages;
 using Hyperai.Messages.ConcreteModels;
+using Hyperai.Messages.ConcreteModels.ImageSources;
 using Newtonsoft.Json;
 
 namespace Ac682.Hyperai.Clients.CQHTTP.Serialization
@@ -15,9 +16,8 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Serialization
                 {
                     Plain plain => new {type = "text", data = new {text = plain.Text}},
                     Face face => new {type = "face", data = new {id = face.FaceId}},
-                    Image image => new
-                        {type = "image", data = new {file = image.ImageId ?? image.Url.AbsoluteUri, url = image.Url}},
                     At at => new {type = "at", data = new {qq = at.TargetId.ToString()}},
+                    ImageBase image when image.Source is UrlSource source => new {type = "image", data = new {file = source.Url.AbsoluteUri, type = image is Flash ? "flash": "image"}},
                     AtAll atall => new {type = "at", data = new {qq = "atall"}},
                     Quote quote => new {type = "reply", data = new {id = quote.MessageId}},
 

@@ -2,7 +2,10 @@
 using Hyperai.Events;
 using Hyperai.Messages;
 using Hyperai.Messages.ConcreteModels;
+using Hyperai.Messages.ConcreteModels.ImageSources;
 using Hyperai.Relations;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Ac682.Hyperai.Clients.CQHTTP.Tests
 {
@@ -13,16 +16,16 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Tests
             var options = new CQClientOptions
             {
                 AccessToken = "NOACCESSTOKEN",
-                Host = "192.168.1.110",
+                Host = "qiv.dowob.vip",
                 HttpPort = 6259,
                 WebSocketPort = 6260
             };
-            var client = new CQClient(options);
+            var client = new CQClient(options, new Logger<CQClient>(NullLoggerFactory.Instance));
             client.Connect();
             var builder = new MessageChainBuilder();
             builder.AddPoke(PokeType.SixSixSix);
             builder.AddPlain("我上线了!");
-            builder.AddImage(new Uri("https://i.loli.net/2020/09/19/YsNtV3iEj6DUenp.jpg"));
+            builder.Add(new Image(null, new UrlSource(new Uri("https://i.loli.net/2020/09/19/YsNtV3iEj6DUenp.jpg"))));
             var chain = builder.Build();
             var evt = new GroupMessageEventArgs
             {
@@ -32,7 +35,8 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Tests
             client.On(new DefaultEventHandler<GroupMessageEventArgs>(client, (_, args) =>
             {
                 Console.WriteLine($"{args.Group.Name}({args.Group.Identity})=>{args.Message}");
-                if (args.Group.Identity == 594429092) client.SendAsync(args).Wait();
+                args.Group.Identity = 594429092;
+                client.SendAsync(args).Wait();
             }));
             client.Listen();
             client.Disconnect();

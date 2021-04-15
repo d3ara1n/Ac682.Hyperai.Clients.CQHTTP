@@ -12,6 +12,7 @@ using Ac682.Hyperai.Clients.CQHTTP.Serialization;
 using Hyperai.Events;
 using Hyperai.Messages;
 using Hyperai.Messages.ConcreteModels;
+using Hyperai.Messages.ConcreteModels.ImageSources;
 using Hyperai.Relations;
 using Hyperai.Services;
 using Newtonsoft.Json;
@@ -176,6 +177,19 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             await Request("delete_msg")
                 .WithJsonBody(new {message_id = messageId})
                 .FetchAsync();
+        }
+
+        public MessageChain PreprocessMessageChainBeforeSending(MessageChain chain)
+        {
+            var passes = chain.Where(x => (x is not ImageBase)||x is ImageBase image && image.Source is UrlSource);
+            if(passes.Count() == chain.Count)
+            {
+                return chain;
+            }
+            else
+            {
+                return new MessageChain(passes);
+            }
         }
 
         public async Task<Self> GetSelfInfoAsync()

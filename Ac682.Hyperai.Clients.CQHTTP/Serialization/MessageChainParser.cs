@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Linq;
 using Hyperai.Messages;
 using Hyperai.Messages.ConcreteModels;
+using Hyperai.Messages.ConcreteModels.ImageSources;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -20,14 +22,14 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Serialization
                 {
                     "text" => new Plain(data!.Value<string>("text")),
                     "face" => new Face(data!.Value<int>("id")),
-                    "image" => new Image(data!.Value<string>("file"),
-                        new Uri(data!.Value<string>("url") != null
-                            ? data!.Value<string>("url")
-                            : $"http://gchat.qpic.cn/gchatpic_new/0/0-0-{data.Value<string>("file").Replace(".image", "").ToUpper()}/0?term=2")),
+                    "image" => (data!.Value<string>("type") == "flash" 
+                        ? new Flash(data!.Value<string>("file"), new UrlSource(new Uri(data.Value<string>("url") ?? $"http://gchat.qpic.cn/gchatpic_new/0/0-0-{data.Value<string>("file")!.Replace(".image","").ToUpper()}/0?term=0", UriKind.Absolute)))
+                        : new Image(data!.Value<string>("file"), new UrlSource(new Uri(data.Value<string>("url")?? $"http://gchat.qpic.cn/gchatpic_new/0/0-0-{data.Value<string>("file")!.Replace(".image","").ToUpper()}/0?term=0", UriKind.Absolute)))
+                        ),
                     "at" => data!.Value<string>("qq") == "all"
                         ? new AtAll()
-                        : new At(long.Parse(data!.Value<string>("qq"))),
-                    "reply" => new Quote(long.Parse(data!.Value<string>("id"))),
+                        : new At(long.Parse(data!.Value<string>("qq") ?? string.Empty)),
+                    "reply" => new Quote(long.Parse(data!.Value<string>("id") ?? string.Empty)),
 
                     _ => new Unknown(obj.ToString())
                 };

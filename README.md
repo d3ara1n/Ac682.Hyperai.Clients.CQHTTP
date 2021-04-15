@@ -6,7 +6,7 @@
 
 ## 部署
 
-同隔壁 [Mirai Adapter](https://github.com/ac682/Ac682.Hyperai.Clients.Mirai)，`Options` 只需要填 `Host`, `HttpPort`, `WebSocketPort`, `AccessToken` 就行。
+同隔壁 [Mirai Adapter](https://github.com/ac682/Ac682.Hyperai.Clients.Mirai), `Options` 只需要填 `Host`, `HttpPort`, `WebSocketPort`, `AccessToken` 就行。
 
 **依赖 Wupoo 包**
 

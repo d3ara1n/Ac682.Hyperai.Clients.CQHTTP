@@ -8,6 +8,7 @@ using Hyperai.Messages.ConcreteModels;
 using Hyperai.Receipts;
 using Hyperai.Relations;
 using Hyperai.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Ac682.Hyperai.Clients.CQHTTP
 {
@@ -15,14 +16,16 @@ namespace Ac682.Hyperai.Clients.CQHTTP
     {
         private readonly CQClientOptions _options;
         private readonly List<(Type, object)> handlers = new();
+        private readonly ILogger _logger;
 
         private bool isDisposed;
         private WebSocketSession session;
 
 
-        public CQClient(CQClientOptions options)
+        public CQClient(CQClientOptions options, ILogger<CQClient> logger)
         {
             _options = options;
+            _logger = logger;
             session = new WebSocketSession(options.Host, options.HttpPort, options.WebSocketPort, options.AccessToken);
         }
 
@@ -32,7 +35,9 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 
         public void Connect()
         {
+            _logger.LogInformation($"Connecting to {_options.Host} on port http/{_options.HttpPort} and ws/{_options.WebSocketPort}.");
             session.Connect();
+            _logger.LogInformation("Connected.");
         }
 
         public void Disconnect()
@@ -115,11 +120,9 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 
         private void Dispose(bool isDisposing)
         {
-            if (!isDisposed && isDisposing)
-            {
-                isDisposed = true;
-                session.Dispose();
-            }
+            if (isDisposed || !isDisposing) return;
+            isDisposed = true;
+            session.Dispose();
         }
 
         private T ChangeType<T>(object obj)
