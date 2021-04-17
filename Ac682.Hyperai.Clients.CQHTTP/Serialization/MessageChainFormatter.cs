@@ -17,7 +17,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Serialization
                     Plain plain => new {type = "text", data = new {text = plain.Text}},
                     Face face => new {type = "face", data = new {id = face.FaceId}},
                     At at => new {type = "at", data = new {qq = at.TargetId.ToString()}},
-                    ImageBase image when image.Source is UrlSource source => new {type = "image", data = new {file = source.Url.AbsoluteUri, type = image is Flash ? "flash": "image"}},
+                    ImageBase image when image.Source is UrlSource source => new {type = "image", data = new {file = source.Url.AbsoluteUri, type = image is Flash ? "flash": "image", cache = 0}},
                     AtAll atall => new {type = "at", data = new {qq = "atall"}},
                     Quote quote => new {type = "reply", data = new {id = quote.MessageId}},
 

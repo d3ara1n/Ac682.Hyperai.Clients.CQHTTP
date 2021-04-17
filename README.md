@@ -14,7 +14,7 @@
 
 ## 实现与未实现
 
-- [ ] 大部分
+- [x] 大部分
 - [x] MessageId 获取, ~~因为是异步的, 所以没法在函数返回前提供 MessageId~~换成同步http发送了
 - [x] 小部分
 
@@ -38,7 +38,7 @@
 - [x] Plain
 - [x] Image
 - [x] Face
-- [ ] Flash
+- [x] Flash
 - [x] At
 - [x] AtAll
 - [x] Quote 只收不发，官方文档对`reply`的描述有出入，但不管那种，都不work
