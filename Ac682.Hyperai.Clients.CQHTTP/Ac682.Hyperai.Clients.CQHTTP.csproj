@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <PackageId>Ac682.Hyperai.Clients.CQHTTP</PackageId>
-    <Version>2021.5.18</Version>
+    <Version>2021.5.19</Version>
     <Authors>ac682</Authors>
     <Company>Unicore</Company>
     <PackageDescription>Ac682.Hyperai.Clients.CQHTTP</PackageDescription>

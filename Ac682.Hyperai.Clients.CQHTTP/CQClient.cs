@@ -66,35 +66,39 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 
         public async Task<T> RequestAsync<T>(T model)
         {
-            switch (model)
+            if (typeof(T) == typeof(Member))
             {
-                case Member member:
-                {
-                    var group = await session.GetGroupInfoAsync(member.Group.Value.Identity);
-                    return ChangeType<T>(await session.GetMemnerInfoAsync(group, member.Identity)) ?? model;
-                }
-                case Group group:
-                {
-                    return ChangeType<T>(await session.GetGroupInfoAsync(group.Identity)) ?? model;
-                }
-                case Friend friend:
-                {
-                    return ChangeType<T>(await session.GetFriendInfoAsync(friend.Identity)) ?? model;
-                }
-                case Self self:
-                {
-                    return ChangeType<T>(await session.GetSelfInfoAsync()) ?? model;
-                }
-                case MessageChain message when message.Any(x => x is Source):
+                Member member = ChangeType<Member>(model);
+                var group = await session.GetGroupInfoAsync(member.Group.Value.Identity);
+                return ChangeType<T>(await session.GetMemnerInfoAsync(group, member.Identity)) ?? model;
+            }
+            if (typeof(T) == typeof(Group))
+            {
+                Group group = ChangeType<Group>(model);
+                return ChangeType<T>(await session.GetGroupInfoAsync(group.Identity)) ?? model;
+            }
+            if (typeof(T) == typeof(Friend))
+            {
+                Friend friend = ChangeType<Friend>(model);
+                return ChangeType<T>(await session.GetFriendInfoAsync(friend.Identity)) ?? model;
+            }
+            if (typeof(T) == typeof(Self))
+            {
+                return ChangeType<T>(await session.GetSelfInfoAsync()) ?? model;
+            }
+            if(typeof(T) == typeof(MessageChain))
+            {
+                MessageChain messageChain = ChangeType<MessageChain>(model);
+                if(messageChain.Any( x=> x is Source))
                 {
                     return ChangeType<T>(
-                               await session.GetMessageByIdAsync(((Source) message.First(x => x is Source))
-                                   .MessageId)) ??
-                           model;
+                                   await session.GetMessageByIdAsync(((Source)messageChain.First(x => x is Source))
+                                       .MessageId)) ??
+                               model;
                 }
-                default:
-                    return model;
             }
+
+            return model;
         }
 
         public async Task<GenericReceipt> SendAsync<TArgs>(TArgs args) where TArgs : GenericEventArgs
@@ -127,7 +131,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 
         private T ChangeType<T>(object obj)
         {
-            return (T) Convert.ChangeType(obj, typeof(T));
+            return (T)Convert.ChangeType(obj, typeof(T));
         }
 
         [Obsolete]
@@ -145,7 +149,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
         private void InvokeHandler(GenericEventArgs args)
         {
             foreach (var handler in handlers.Where(x => x.Item1.IsInstanceOfType(args)).Select(x => x.Item2))
-                handler.GetType().GetMethod("Handle")?.Invoke(handler, new object[] {args});
+                handler.GetType().GetMethod("Handle")?.Invoke(handler, new object[] { args });
         }
     }
 }
