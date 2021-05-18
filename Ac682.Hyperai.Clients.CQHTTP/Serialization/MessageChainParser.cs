@@ -18,7 +18,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Serialization
             {
                 var obj = (JObject) jToken;
                 var data = obj["data"];
-                MessageComponent component = obj.Value<string>("type") switch
+                MessageElement element = obj.Value<string>("type") switch
                 {
                     "text" => new Plain(data!.Value<string>("text")),
                     "face" => new Face(data!.Value<int>("id")),
@@ -33,7 +33,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Serialization
 
                     _ => new Unknown(obj.ToString())
                 };
-                builder.Add(component);
+                builder.Add(element);
             }
 
             return builder.Build();
