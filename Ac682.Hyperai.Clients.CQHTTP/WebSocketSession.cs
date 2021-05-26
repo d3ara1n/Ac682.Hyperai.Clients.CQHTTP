@@ -341,7 +341,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 })
                 .ForJsonResult<JObject>(obj =>
                 {
-                    chain = parser.Parse(obj["data"].Value<JArray>("message").ToString());
+                    chain = new MessageChain(parser.Parse(obj["data"].Value<JArray>("message").ToString()).Append(new Source(id)));
                 })
                 .FetchAsync();
             return chain ?? MessageChain.Construct(new Source(id));
