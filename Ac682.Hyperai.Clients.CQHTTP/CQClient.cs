@@ -70,7 +70,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             {
                 Member member = ChangeType<Member>(model);
                 var group = await session.GetGroupInfoAsync(member.Group.Value.Identity);
-                return ChangeType<T>(await session.GetMemnerInfoAsync(group, member.Identity)) ?? model;
+                return ChangeType<T>(await session.GetMemberInfoAsync(group, member.Identity)) ?? model;
             }
             if (typeof(T) == typeof(Group))
             {
@@ -86,10 +86,10 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             {
                 return ChangeType<T>(await session.GetSelfInfoAsync()) ?? model;
             }
-            if(typeof(T) == typeof(MessageChain))
+            if (typeof(T) == typeof(MessageChain))
             {
                 MessageChain messageChain = ChangeType<MessageChain>(model);
-                if(messageChain.Any( x=> x is Source))
+                if (messageChain.Any(x => x is Source))
                 {
                     return ChangeType<T>(
                                    await session.GetMessageByIdAsync(((Source)messageChain.First(x => x is Source))
@@ -111,12 +111,36 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 case GroupMessageEventArgs gme:
                     await session.SendGroupMessageAsync(gme.Group, gme.Message);
                     break;
-                case GroupRecallEventArgs gre:
-                    await session.RecallMessageAsync(gre.MessageId);
+                case RecallEventArgs rea:
+                    await session.RecallMessageAsync(rea.MessageId);
                     break;
-                case FriendRecallEventArgs fre:
-                    await session.RecallMessageAsync(fre.MessageId);
+                case GroupMemberCardChangedEventArgs gmcce:
+                    await session.SetMemberCardAsync(gmcce.Group.Identity, gmcce.WhoseName.Identity, gmcce.Present);
                     break;
+                case GroupMemberLeftEventArgs gmle:
+                    Self me = await session.GetSelfInfoAsync();
+                    if (gmle.Who.Identity == me.Identity)
+                    {
+                        await session.LeaveGroupAsync(gmle.Group.Identity);
+                    }
+                    else
+                    {
+                        await session.KickGroupMemberAsync(gmle.Group.Identity, gmle.Who.Identity);
+                    }
+                    break;
+                case GroupMemberMutedEventArgs gmme:
+                    await session.MuteGroupMemberAsync(gmme.Group.Identity, gmme.Whom.Identity, gmme.Duration);
+                    break;
+                case GroupMemberUnmutedEventArgs gmue:
+                    await session.UnmuteGroupMemberAsync(gmue.Group.Identity, gmue.Whom.Identity);
+                    break;
+                case GroupAllMutedEventArgs game:
+                    await session.GroupMuteAllAsync(game.Group.Identity, !game.IsEnded);
+                    break;
+                case GroupNameChangedEventArgs gnce:
+                    await session.SetGroupNameAsync(gnce.Group.Identity, gnce.Present);
+                    break;
+
             }
 
             return null;

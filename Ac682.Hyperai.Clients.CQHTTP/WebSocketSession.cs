@@ -106,37 +106,202 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 
             switch (postType)
             {
-                case "meta_event":
-                    return null;
                 case "message":
                     switch (dick.Value<string>("message_type"))
                     {
                         case "group":
-                        {
-                            var message = JsonConvert.DeserializeObject<DtoGroupMessage>(json, serializerSettings);
-                            var args = new GroupMessageEventArgs
                             {
-                                Message = new MessageChain(message!.Message.Append(new Source(message.Message_Id))),
-                                Time = DateTime.Now,
-                                Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult()
-                            };
+                                var message = JsonConvert.DeserializeObject<DtoGroupMessage>(json, serializerSettings);
+                                var args = new GroupMessageEventArgs
+                                {
+                                    Message = new MessageChain(message!.Message.Append(new Source(message.Message_Id))),
+                                    Time = DateTime.Now,
+                                    Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult()
+                                };
 
-                            args.User = message.Sender.ToMember(args.Group);
-                            return args;
-                        }
+                                args.User = message.Sender.ToMember(args.Group);
+                                return args;
+                            }
                         case "private":
-                        {
-                            var message = JsonConvert.DeserializeObject<DtoFriendMessage>(json, serializerSettings);
-                            var args = new FriendMessageEventArgs
                             {
-                                Message = new MessageChain(message!.Message.Append(new Source(message!.Message_Id))),
-                                Time = DateTime.Now,
-                                User = message!.Sender.ToFriend()
-                            };
-                            return args;
-                        }
+                                var message = JsonConvert.DeserializeObject<DtoFriendMessage>(json, serializerSettings);
+                                var args = new FriendMessageEventArgs
+                                {
+                                    Message = new MessageChain(message!.Message.Append(new Source(message!.Message_Id))),
+                                    Time = DateTime.Now,
+                                    User = message!.Sender.ToFriend()
+                                };
+                                return args;
+                            }
                         default:
                             return null;
+                    }
+                case "notice":
+                    {
+                        switch (dick.Value<string>("notice_type"))
+                        {
+                            case "group_admin":
+                                {
+                                    var args = new GroupMemberPermissionChangedEventArgs
+                                    {
+                                        Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult()
+                                    };
+                                    args.Whom = GetMemberInfoAsync(args.Group, dick.Value<long>("user_info")).GetAwaiter().GetResult();
+                                    switch (dick.Value<string>("sub_type"))
+                                    {
+                                        case "set":
+                                            {
+                                                args.Original = GroupRole.Member;
+                                                args.Present = GroupRole.Administrator;
+                                            }
+                                            break;
+                                        case "unset":
+                                            {
+                                                args.Original = GroupRole.Administrator;
+                                                args.Present = GroupRole.Member;
+                                            }
+                                            break;
+                                        default:
+                                            return null;
+                                    }
+                                    return args;
+                                }
+                            case "group_ban":
+                                {
+                                    Self me = GetSelfInfoAsync().GetAwaiter().GetResult();
+                                    switch (dick.Value<string>("sub_type"))
+                                    {
+                                        case "ban":
+                                            {
+                                                GroupMutedEventArgs args = null;
+                                                if (dick.Value<long>("user_id") == me.Identity)
+                                                {
+                                                    args = new GroupSelfMutedEventArgs();
+                                                }
+                                                else
+                                                {
+                                                    args = new GroupMemberMutedEventArgs();
+                                                }
+                                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
+                                                args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
+                                                args.Duration = TimeSpan.FromSeconds(dick.Value<long>("duration"));
+                                                if (args is GroupMemberMutedEventArgs memberArgs)
+                                                {
+                                                    memberArgs.Whom = GetMemberInfoAsync(memberArgs.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
+                                                }
+                                                return args;
+                                            }
+                                        case "lift_ban":
+                                            {
+                                                GroupUnmutedEventArgs args = null;
+                                                if (dick.Value<long>("user_id") == me.Identity)
+                                                {
+                                                    args = new GroupSelfUnmutedEventArgs();
+                                                }
+                                                else
+                                                {
+                                                    args = new GroupMemberUnmutedEventArgs();
+                                                }
+                                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
+                                                args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
+                                                if (args is GroupMemberUnmutedEventArgs memberArgs)
+                                                {
+                                                    memberArgs.Whom = GetMemberInfoAsync(memberArgs.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
+                                                }
+                                                return args;
+                                            }
+                                        default:
+                                            return null;
+                                    }
+                                }
+                            case "group_decrease":
+                                {
+                                    switch (dick.Value<string>("sub_type"))
+                                    {
+                                        case "kick_me":
+                                            {
+                                                var args = new GroupSelfLeftEventArgs();
+                                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
+                                                args.IsKicked = true;
+                                                args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
+                                                return args;
+                                            }
+                                        case "kick":
+                                            {
+                                                var args = new GroupMemberLeftEventArgs();
+                                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
+                                                args.IsKicked = true;
+                                                args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
+                                                args.Who = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
+                                                return args;
+                                            }
+                                        case "leave":
+                                            {
+                                                var args = new GroupMemberLeftEventArgs();
+                                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
+                                                args.IsKicked = false;
+                                                args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
+                                                args.Who = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
+                                                return args;
+                                            }
+                                        default:
+                                            return null;
+                                    }
+                                }
+                            case "group_increase":
+                                {
+                                    switch (dick.Value<string>("sub_type"))
+                                    {
+                                        case "invite":
+                                        case "approve":
+                                            {
+                                                var args = new GroupMemberJoinedEventArgs();
+                                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
+                                                args.Who = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
+                                                return args;
+                                            }
+                                        default:
+                                            return null;
+                                    }
+                                }
+                            case "group_recall":
+                                {
+                                    var args = new GroupRecallEventArgs();
+                                    args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
+                                    args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
+                                    args.WhoseMessage = dick.Value<long>("user_id");
+                                    args.MessageId = dick.Value<long>("message_id");
+                                    return args;
+                                }
+                            case "friend_recall":
+                                {
+                                    var args = new FriendRecallEventArgs();
+                                    args.IsSelfOperated = true;
+                                    args.MessageId = dick.Value<long>("message_id");
+                                    args.Operator = dick.Value<long>("user_id");
+                                    return args;
+                                }
+                            case "notify":
+                                {
+                                    switch (dick.Value<string>("sub_type"))
+                                    {
+                                        case "poke":
+                                            {
+                                                // TODO: 支持 Poke
+                                                return null;
+                                            }
+                                        case "honor":
+                                            {
+                                                // 不需要支持 群荣誉变更
+                                                return null;
+                                            }
+                                        default:
+                                            return null;
+                                    }
+                                }
+                            default:
+                                return null;
+                        }
                     }
                 default:
                     // discard
@@ -175,14 +340,64 @@ namespace Ac682.Hyperai.Clients.CQHTTP
         public async Task RecallMessageAsync(long messageId)
         {
             await Request("delete_msg")
-                .WithJsonBody(new {message_id = messageId})
+                .WithJsonBody(new { message_id = messageId })
+                .FetchAsync();
+        }
+
+        public async Task SetMemberCardAsync(long groupId, long memberId, string name)
+        {
+            await Request("set_group_card")
+                .WithJsonBody(new { group_id = groupId, user_id = memberId, card = name })
+                .FetchAsync();
+        }
+
+        public async Task SetGroupNameAsync(long groupId, string name)
+        {
+            await Request("set_group_name ")
+                .WithJsonBody(new { group_id = groupId, group_name = name })
+                .FetchAsync();
+        }
+
+        public async Task LeaveGroupAsync(long groupId)
+        {
+            await Request("set_group_leave")
+                .WithJsonBody(new { group_id = groupId })
+                .FetchAsync();
+
+        }
+
+        public async Task KickGroupMemberAsync(long groupId, long memberId)
+        {
+            await Request("set_group_kick")
+                .WithJsonBody(new { group_id = groupId, user_id = memberId })
+                .FetchAsync();
+        }
+
+        public async Task MuteGroupMemberAsync(long groupId, long memberId, TimeSpan duration)
+        {
+            await Request("set_group_ban")
+                .WithJsonBody(new { group_id = groupId, user_id = memberId, duration = duration.TotalSeconds })
+                .FetchAsync();
+        }
+
+        public async Task UnmuteGroupMemberAsync(long groupId, long memberId)
+        {
+            await Request("set_group_ban")
+                .WithJsonBody(new { group_id = groupId, user_id = memberId, duration = TimeSpan.FromSeconds(0) })
+                .FetchAsync();
+        }
+
+        public async Task GroupMuteAllAsync(long groupId, bool mute = true)
+        {
+            await Request("set_group_whole_ban ")
+                .WithJsonBody(new { group_id = groupId, enable = mute })
                 .FetchAsync();
         }
 
         public MessageChain PreprocessMessageChainBeforeSending(MessageChain chain)
         {
-            var passes = chain.Where(x => (x is not ImageBase)||x is ImageBase image && image.Source is UrlSource);
-            if(passes.Count() == chain.Count)
+            var passes = chain.Where(x => (x is not ImageBase) || x is ImageBase image && image.Source is UrlSource);
+            if (passes.Count() == chain.Count)
             {
                 return chain;
             }
@@ -216,7 +431,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 {
                     foreach (var jToken in obj.Value<JArray>("data"))
                     {
-                        var f = (JObject) jToken;
+                        var f = (JObject)jToken;
                         var friend = new Friend
                         {
                             Identity = f.Value<long>("user_id"),
@@ -243,7 +458,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 {
                     foreach (var jToken in obj.Value<JArray>("data"))
                     {
-                        var g = (JObject) jToken;
+                        var g = (JObject)jToken;
                         var group = new Group
                         {
                             Identity = g.Value<long>("group_id"),
@@ -263,7 +478,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 
         public async Task<Group> GetGroupInfoAsync(long id)
         {
-            var result = new Group {Identity = id};
+            var result = new Group { Identity = id };
             var task1 = Request("get_group_info")
                 .WithJsonBody(new
                 {
@@ -289,7 +504,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 {
                     foreach (var jToken in obj.Value<JArray>("data"))
                     {
-                        var mem = (JObject) jToken;
+                        var mem = (JObject)jToken;
                         var member = new Member
                         {
                             Group = new Lazy<Group>(group),
@@ -307,7 +522,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             return members;
         }
 
-        public async Task<Member> GetMemnerInfoAsync(Group group, long id)
+        public async Task<Member> GetMemberInfoAsync(Group group, long id)
         {
             var member = new Member
             {
