@@ -16,17 +16,19 @@ namespace Ac682.Hyperai.Clients.CQHTTP
     {
         private readonly CQClientOptions _options;
         private readonly List<(Type, object)> handlers = new();
+        private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
 
         private bool isDisposed;
         private WebSocketSession session;
 
 
-        public CQClient(CQClientOptions options, ILogger<CQClient> logger)
+        public CQClient(CQClientOptions options, ILoggerFactory factory)
         {
             _options = options;
-            _logger = logger;
-            session = new WebSocketSession(options.Host, options.HttpPort, options.WebSocketPort, options.AccessToken);
+            _loggerFactory = factory;
+            _logger = factory.CreateLogger<CQClient>();
+            session = new WebSocketSession(options.Host, options.HttpPort, options.WebSocketPort, options.AccessToken, factory.CreateLogger<WebSocketSession>());
         }
 
         public ApiClientConnectionState State =>

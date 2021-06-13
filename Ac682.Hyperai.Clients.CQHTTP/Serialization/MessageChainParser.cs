@@ -30,6 +30,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Serialization
                         ? new AtAll()
                         : new At(long.Parse(data!.Value<string>("qq") ?? string.Empty)),
                     "reply" => new Quote(long.Parse(data!.Value<string>("id") ?? string.Empty)),
+                    "poke" => new Poke(GetPoke(data!.Value<string>("type"))),
 
                     _ => new Unknown(obj.ToString())
                 };
@@ -37,6 +38,16 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Serialization
             }
 
             return builder.Build();
+        }
+
+        private PokeType GetPoke(string name)
+        {
+            if (Enum.TryParse(name, out PokeType result))
+            {
+                return result;
+            }
+
+            return PokeType.Poke;
         }
     }
 }

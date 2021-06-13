@@ -15,6 +15,7 @@ using Hyperai.Messages.ConcreteModels;
 using Hyperai.Messages.ConcreteModels.ImageSources;
 using Hyperai.Relations;
 using Hyperai.Services;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Wupoo;
@@ -28,6 +29,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
         private readonly string _host;
         private readonly int _httpPort;
         private readonly int _websocketPort;
+        private readonly ILogger _logger;
         private readonly IMessageChainParser parser = new MessageChainParser();
         private readonly JsonSerializerSettings serializerSettings;
         private readonly WapooOptions wapooOptions;
@@ -36,12 +38,13 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 
         private readonly bool isDisposed = false;
 
-        public WebSocketSession(string host, int httpPort, int websocketPort, string accessToken)
+        public WebSocketSession(string host, int httpPort, int websocketPort, string accessToken, ILogger logger)
         {
             _host = host;
             _httpPort = httpPort;
             _websocketPort = websocketPort;
             _accessToken = accessToken;
+            _logger = logger;
 
             serializerSettings = new JsonSerializerSettings
             {
@@ -93,7 +96,16 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 if (result.MessageType != WebSocketMessageType.Text) continue;
                 using var reader = new StreamReader(ms, Encoding.UTF8);
                 var text = reader.ReadToEnd();
-                var args = ParseEvent(text);
+                GenericEventArgs args = null;
+                try
+                {
+                    args = ParseEvent(text);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "Error occurred while parsing events.");
+                }
+                
                 if (args != null)
                     callback(args);
             }
@@ -114,7 +126,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                                 var message = JsonConvert.DeserializeObject<DtoGroupMessage>(json, serializerSettings);
                                 var args = new GroupMessageEventArgs
                                 {
-                                    Message = new MessageChain(message!.Message.Append(new Source(message.Message_Id))),
+                                    Message = new MessageChain(message!.Message.Prepend(new Source(message.Message_Id))),
                                     Time = DateTime.Now,
                                     Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult()
                                 };
@@ -127,7 +139,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                                 var message = JsonConvert.DeserializeObject<DtoFriendMessage>(json, serializerSettings);
                                 var args = new FriendMessageEventArgs
                                 {
-                                    Message = new MessageChain(message!.Message.Append(new Source(message!.Message_Id))),
+                                    Message = new MessageChain(message!.Message.Prepend(new Source(message!.Message_Id))),
                                     Time = DateTime.Now,
                                     User = message!.Sender.ToFriend()
                                 };
@@ -176,15 +188,21 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                                                 GroupMutedEventArgs args = null;
                                                 if (dick.Value<long>("user_id") == me.Identity)
                                                 {
-                                                    args = new GroupSelfMutedEventArgs();
+                                                    args = new GroupSelfMutedEventArgs()
+                                                    {
+                                                        Duration = TimeSpan.FromSeconds(dick.Value<long>("duration"))
+                                                    };
+
                                                 }
                                                 else
                                                 {
-                                                    args = new GroupMemberMutedEventArgs();
+                                                    args = new GroupMemberMutedEventArgs()
+                                                    {
+                                                        Duration = TimeSpan.FromSeconds(dick.Value<long>("duration"))
+                                                    };
                                                 }
                                                 args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
                                                 args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
-                                                args.Duration = TimeSpan.FromSeconds(dick.Value<long>("duration"));
                                                 if (args is GroupMemberMutedEventArgs memberArgs)
                                                 {
                                                     memberArgs.Whom = GetMemberInfoAsync(memberArgs.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
@@ -269,16 +287,16 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                                     var args = new GroupRecallEventArgs();
                                     args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
                                     args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
-                                    args.WhoseMessage = dick.Value<long>("user_id");
+                                    args.WhoseMessage = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
                                     args.MessageId = dick.Value<long>("message_id");
                                     return args;
                                 }
                             case "friend_recall":
                                 {
                                     var args = new FriendRecallEventArgs();
-                                    args.IsSelfOperated = true;
                                     args.MessageId = dick.Value<long>("message_id");
-                                    args.Operator = dick.Value<long>("user_id");
+                                    args.WhoseMessage = GetFriendInfoAsync(dick.Value<long>("user_id")).GetAwaiter()
+                                        .GetResult();
                                     return args;
                                 }
                             case "notify":
@@ -556,7 +574,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 })
                 .ForJsonResult<JObject>(obj =>
                 {
-                    chain = new MessageChain(parser.Parse(obj["data"].Value<JArray>("message").ToString()).Append(new Source(id)));
+                    chain = new MessageChain(parser.Parse(obj["data"].Value<JArray>("message")!.ToString()).Prepend(new Source(id)));
                 })
                 .FetchAsync();
             return chain ?? MessageChain.Construct(new Source(id));
