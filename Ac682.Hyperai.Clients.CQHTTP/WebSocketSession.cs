@@ -276,6 +276,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                                                 var args = new GroupMemberJoinedEventArgs();
                                                 args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
                                                 args.Who = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
+                                                args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
                                                 return args;
                                             }
                                         default:
