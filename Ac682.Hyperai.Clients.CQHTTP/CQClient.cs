@@ -37,7 +37,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 
         public void Connect()
         {
-            _logger.LogInformation($"Connecting to {_options.Host} on port http/{_options.HttpPort} and ws/{_options.WebSocketPort}.");
+            _logger.LogInformation("Connecting to {Host} on port http/{HttpPort} and ws/{WebSocketPort}.",_options.Host,_options.HttpPort,_options.WebSocketPort);
             session.Connect();
             _logger.LogInformation("Connected.");
         }
@@ -95,8 +95,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 {
                     return ChangeType<T>(
                                    await session.GetMessageByIdAsync(((Source)messageChain.First(x => x is Source))
-                                       .MessageId)) ??
-                               model;
+                                       .MessageId)) ?? model;
                 }
             }
 
