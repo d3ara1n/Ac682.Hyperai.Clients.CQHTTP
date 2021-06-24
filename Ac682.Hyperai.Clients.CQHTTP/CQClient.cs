@@ -18,8 +18,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
         private readonly List<(Type, object)> handlers = new();
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
-
-        private bool isDisposed;
+        
         private WebSocketSession session;
 
 
@@ -45,15 +44,11 @@ namespace Ac682.Hyperai.Clients.CQHTTP
         public void Disconnect()
         {
             session.Disconnect();
-            session.Dispose();
-            session = null;
         }
 
         public void Dispose()
         {
-            Disconnect();
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            session.Dispose();
         }
 
         public void Listen()
@@ -145,13 +140,6 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             }
 
             return null;
-        }
-
-        private void Dispose(bool isDisposing)
-        {
-            if (isDisposed || !isDisposing) return;
-            isDisposed = true;
-            session.Dispose();
         }
 
         private T ChangeType<T>(object obj)

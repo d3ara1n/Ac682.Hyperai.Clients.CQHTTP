@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using Hyperai.Events;
 using Hyperai.Messages;
 using Hyperai.Messages.ConcreteModels;
@@ -23,14 +24,20 @@ namespace Ac682.Hyperai.Clients.CQHTTP.Tests
             };
             var client = new CQClient(options, NullLoggerFactory.Instance);
             client.Connect();
-            client.On(new DefaultEventHandler<GroupMessageEventArgs>(client, (_, args) =>
+            client.On(new DefaultEventHandler<GroupMessageEventArgs>(client, (c, args) =>
             {
                 Console.WriteLine($"{args.Group.Name}({args.Group.Identity})=>{args.Message}");
                 args.Group.Identity = 594429092;
-                client.SendAsync(args).Wait();
+                c.SendAsync(args).Wait();
+                string msg = (args.Message.FirstOrDefault(x => x is Plain) as Plain)?.Text;
+                Console.WriteLine(msg);
+                if (msg == "disconnect")
+                {
+                    c.Disconnect();
+                }
             }));
             client.Listen();
-            client.Disconnect();
+            client.Dispose();
         }
     }
 }

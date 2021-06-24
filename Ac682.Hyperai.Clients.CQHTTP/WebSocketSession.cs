@@ -25,6 +25,12 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 {
     public sealed class WebSocketSession : IDisposable
     {
+        
+
+        public ApiClientConnectionState State => client != null && client!.State == WebSocketState.Open
+            ? ApiClientConnectionState.Connected
+            : ApiClientConnectionState.Disconnected;
+        
         private readonly string _accessToken;
         private readonly string _host;
         private readonly int _httpPort;
@@ -35,6 +41,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
         private readonly WapooOptions wapooOptions;
 
         private ClientWebSocket client;
+        
 
         private readonly bool isDisposed = false;
 
@@ -61,10 +68,6 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             };
         }
 
-        public ApiClientConnectionState State => client == null && client!.State == WebSocketState.Open
-            ? ApiClientConnectionState.Disconnected
-            : ApiClientConnectionState.Connected;
-
         public void Dispose()
         {
             Dispose(true);
@@ -81,6 +84,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
         public void ReceiveEvents(Action<GenericEventArgs> callback)
         {
             var buffer = WebSocket.CreateClientBuffer(1024, 1024);
+            
             while (State == ApiClientConnectionState.Connected)
             {
                 using var ms = new MemoryStream();
@@ -96,6 +100,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 if (result.MessageType != WebSocketMessageType.Text) continue;
                 using var reader = new StreamReader(ms, Encoding.UTF8);
                 var text = reader.ReadToEnd();
+                ms.Close();
                 GenericEventArgs args = null;
                 try
                 {
@@ -588,7 +593,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
 
         public void Disconnect()
         {
-            client.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None).Wait();
+            client.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None).Wait();
         }
 
         private void Dispose(bool isDisposing)
