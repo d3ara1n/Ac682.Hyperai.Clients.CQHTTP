@@ -113,7 +113,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 case GroupMemberCardChangedEventArgs gmcce:
                     await session.SetMemberCardAsync(gmcce.Group.Identity, gmcce.WhoseName.Identity, gmcce.Present);
                     break;
-                case GroupMemberLeftEventArgs gmle:
+                case GroupLeftEventArgs gmle:
                     Self me = await session.GetSelfInfoAsync();
                     if (gmle.Who.Identity == me.Identity)
                     {

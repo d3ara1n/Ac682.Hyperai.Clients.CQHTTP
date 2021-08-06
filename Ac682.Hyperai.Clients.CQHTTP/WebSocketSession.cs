@@ -159,7 +159,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                         {
                             case "group_admin":
                                 {
-                                    var args = new GroupMemberPermissionChangedEventArgs
+                                    var args = new GroupPermissionChangedEventArgs
                                     {
                                         Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult()
                                     };
@@ -190,47 +190,21 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                                     {
                                         case "ban":
                                             {
-                                                GroupMutedEventArgs args = null;
-                                                if (dick.Value<long>("user_id") == me.Identity)
+                                                var args = new GroupMemberMutedEventArgs()
                                                 {
-                                                    args = new GroupSelfMutedEventArgs()
-                                                    {
-                                                        Duration = TimeSpan.FromSeconds(dick.Value<long>("duration"))
-                                                    };
-
-                                                }
-                                                else
-                                                {
-                                                    args = new GroupMemberMutedEventArgs()
-                                                    {
-                                                        Duration = TimeSpan.FromSeconds(dick.Value<long>("duration"))
-                                                    };
-                                                }
+                                                    Duration = TimeSpan.FromSeconds(dick.Value<long>("duration"))
+                                                };
                                                 args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
                                                 args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
-                                                if (args is GroupMemberMutedEventArgs memberArgs)
-                                                {
-                                                    memberArgs.Whom = GetMemberInfoAsync(memberArgs.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
-                                                }
+                                                args.Whom = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
                                                 return args;
                                             }
                                         case "lift_ban":
                                             {
-                                                GroupUnmutedEventArgs args = null;
-                                                if (dick.Value<long>("user_id") == me.Identity)
-                                                {
-                                                    args = new GroupSelfUnmutedEventArgs();
-                                                }
-                                                else
-                                                {
-                                                    args = new GroupMemberUnmutedEventArgs();
-                                                }
+                                                var args = new GroupMemberUnmutedEventArgs();
                                                 args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
                                                 args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
-                                                if (args is GroupMemberUnmutedEventArgs memberArgs)
-                                                {
-                                                    memberArgs.Whom = GetMemberInfoAsync(memberArgs.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
-                                                }
+                                                args.Whom = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
                                                 return args;
                                             }
                                         default:
@@ -239,19 +213,22 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                                 }
                             case "group_decrease":
                                 {
+                                    
+                                    Self me = GetSelfInfoAsync().GetAwaiter().GetResult();
                                     switch (dick.Value<string>("sub_type"))
                                     {
                                         case "kick_me":
                                             {
-                                                var args = new GroupSelfLeftEventArgs();
+                                                var args = new GroupLeftEventArgs();
                                                 args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
                                                 args.IsKicked = true;
+                                                args.Who = GetMemberInfoAsync(args.Group, me.Identity).GetAwaiter().GetResult();
                                                 args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
                                                 return args;
                                             }
                                         case "kick":
                                             {
-                                                var args = new GroupMemberLeftEventArgs();
+                                                var args = new GroupLeftEventArgs();
                                                 args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
                                                 args.IsKicked = true;
                                                 args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
@@ -260,7 +237,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                                             }
                                         case "leave":
                                             {
-                                                var args = new GroupMemberLeftEventArgs();
+                                                var args = new GroupLeftEventArgs();
                                                 args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
                                                 args.IsKicked = false;
                                                 args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
@@ -278,7 +255,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                                         case "invite":
                                         case "approve":
                                             {
-                                                var args = new GroupMemberJoinedEventArgs();
+                                                var args = new GroupJoinedEventArgs();
                                                 args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
                                                 args.Who = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter().GetResult();
                                                 args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter().GetResult();
