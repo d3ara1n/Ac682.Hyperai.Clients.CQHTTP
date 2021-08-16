@@ -102,10 +102,24 @@ namespace Ac682.Hyperai.Clients.CQHTTP
             switch (args)
             {
                 case FriendMessageEventArgs fme:
-                    await session.SendFriendMessageAsync(fme.User, fme.Message);
+                    if (fme.Message.Any(x => x is Node))
+                    {
+                        await session.SendFriendForwardMessageAsync(fme.User, fme.Message);
+                    }
+                    else
+                    {
+                        await session.SendFriendMessageAsync(fme.User, fme.Message);
+                    }
                     break;
                 case GroupMessageEventArgs gme:
-                    await session.SendGroupMessageAsync(gme.Group, gme.Message);
+                    if (gme.Message.Any(x => x is Node))
+                    {
+                        await session.SendGroupForwardMessageAsync(gme.Group, gme.Message);
+                    }
+                    else
+                    {
+                        await session.SendGroupMessageAsync(gme.Group, gme.Message);
+                    }
                     break;
                 case RecallEventArgs rea:
                     await session.RecallMessageAsync(rea.MessageId);
@@ -135,6 +149,17 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                     break;
                 case GroupNameChangedEventArgs gnce:
                     await session.SetGroupNameAsync(gnce.Group.Identity, gnce.Present);
+                    break;
+                case GroupResponseEventArgs gre:
+                    await session.ResponseGroupRequsetAsync(gre.Flag,
+                        gre.Operation == GroupResponseEventArgs.ResponseOperation.Approve, gre.Reason);
+                    break;
+                case FriendResponseEventArgs fre:
+                    await session.ResponseFriendRequestAsync(fre.Flag,
+                        fre.Operation == FriendResponseEventArgs.ResponseOperation.Approve);
+                    break;
+                default:
+                    _logger.LogWarning($"Trying to send a unimplemented event: {args.GetType().Name}");
                     break;
 
             }

@@ -362,3 +362,5 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+
+Ac682.Hyperai.Clients.CQHTTP.Tests/
