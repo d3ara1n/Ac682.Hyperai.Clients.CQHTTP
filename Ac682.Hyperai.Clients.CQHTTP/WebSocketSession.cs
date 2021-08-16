@@ -110,7 +110,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 }
                 else
                 {
-                    _logger.LogWarning("Un resolved event received: \n" + text);
+                    _logger.LogDebug("Un resolved event received: \n" + text);
                 }
             }
         }
@@ -126,245 +126,254 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                     switch (dick.Value<string>("message_type"))
                     {
                         case "group":
-                        {
-                            var message = JsonConvert.DeserializeObject<DtoGroupMessage>(json, Shared.SerializerSettings);
-                            var args = new GroupMessageEventArgs
                             {
-                                Message = PostProcessMessageAsync(
-                                        new MessageChain(message!.Message.Prepend(new Source(message.Message_Id))))
-                                    .GetAwaiter().GetResult(),
-                                Time = DateTime.Now,
-                                Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult()
-                            };
+                                var message = JsonConvert.DeserializeObject<DtoGroupMessage>(json, Shared.SerializerSettings);
+                                var args = new GroupMessageEventArgs
+                                {
+                                    Message = PostProcessMessageAsync(
+                                            new MessageChain(message!.Message.Prepend(new Source(message.Message_Id))))
+                                        .GetAwaiter().GetResult(),
+                                    Time = DateTime.Now,
+                                    Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult()
+                                };
 
-                            args.User = message.Sender.ToMember(args.Group);
-                            return args;
-                        }
+                                args.User = message.Sender.ToMember(args.Group);
+                                return args;
+                            }
                         case "private":
-                        {
-                            var message = JsonConvert.DeserializeObject<DtoFriendMessage>(json, Shared.SerializerSettings);
-                            var args = new FriendMessageEventArgs
                             {
-                                Message = PostProcessMessageAsync(
-                                        new MessageChain(message!.Message.Prepend(new Source(message!.Message_Id))))
-                                    .GetAwaiter().GetResult(),
-                                Time = DateTime.Now,
-                                User = message!.Sender.ToFriend()
-                            };
-                            return args;
-                        }
+                                var message = JsonConvert.DeserializeObject<DtoFriendMessage>(json, Shared.SerializerSettings);
+                                var args = new FriendMessageEventArgs
+                                {
+                                    Message = PostProcessMessageAsync(
+                                            new MessageChain(message!.Message.Prepend(new Source(message!.Message_Id))))
+                                        .GetAwaiter().GetResult(),
+                                    Time = DateTime.Now,
+                                    User = message!.Sender.ToFriend()
+                                };
+                                return args;
+                            }
                         default:
                             return null;
                     }
                 case "notice":
-                {
-                    switch (dick.Value<string>("notice_type"))
                     {
-                        case "friend_add":
+                        switch (dick.Value<string>("notice_type"))
                         {
-                            var args = new FriendResponseEventArgs()
-                            {
-                                Operation = FriendResponseEventArgs.ResponseOperation.Approve,
-                                Who = dick.Value<long>("user_id")
-                            };
-                            return args;
-                        }
-                        case "group_admin":
-                        {
-                            var args = new GroupPermissionChangedEventArgs
-                            {
-                                Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult()
-                            };
-                            args.Whom = GetMemberInfoAsync(args.Group, dick.Value<long>("user_info")).GetAwaiter()
-                                .GetResult();
-                            switch (dick.Value<string>("sub_type"))
-                            {
-                                case "set":
+                            case "friend_add":
                                 {
-                                    args.Original = GroupRole.Member;
-                                    args.Present = GroupRole.Administrator;
-                                }
-                                    break;
-                                case "unset":
-                                {
-                                    args.Original = GroupRole.Administrator;
-                                    args.Present = GroupRole.Member;
-                                }
-                                    break;
-                                default:
-                                    return null;
-                            }
-
-                            return args;
-                        }
-                        case "group_ban":
-                        {
-                            Self me = GetSelfInfoAsync().GetAwaiter().GetResult();
-                            switch (dick.Value<string>("sub_type"))
-                            {
-                                case "ban":
-                                {
-                                    var args = new GroupMemberMutedEventArgs()
+                                    var args = new FriendResponseEventArgs()
                                     {
-                                        Duration = TimeSpan.FromSeconds(dick.Value<long>("duration"))
+                                        Operation = FriendResponseEventArgs.ResponseOperation.Approve,
+                                        Who = dick.Value<long>("user_id")
                                     };
-                                    args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter()
+                                    return args;
+                                }
+                            case "group_admin":
+                                {
+                                    var args = new GroupPermissionChangedEventArgs
+                                    {
+                                        Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult()
+                                    };
+                                    args.Whom = GetMemberInfoAsync(args.Group, dick.Value<long>("user_info")).GetAwaiter()
                                         .GetResult();
-                                    args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id"))
-                                        .GetAwaiter().GetResult();
-                                    args.Whom = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter()
+                                    switch (dick.Value<string>("sub_type"))
+                                    {
+                                        case "set":
+                                            {
+                                                args.Original = GroupRole.Member;
+                                                args.Present = GroupRole.Administrator;
+                                            }
+                                            break;
+                                        case "unset":
+                                            {
+                                                args.Original = GroupRole.Administrator;
+                                                args.Present = GroupRole.Member;
+                                            }
+                                            break;
+                                        default:
+                                            return null;
+                                    }
+
+                                    return args;
+                                }
+                            case "group_ban":
+                                {
+                                    Self me = GetSelfInfoAsync().GetAwaiter().GetResult();
+                                    switch (dick.Value<string>("sub_type"))
+                                    {
+                                        case "ban":
+                                            {
+                                                var args = new GroupMemberMutedEventArgs()
+                                                {
+                                                    Duration = TimeSpan.FromSeconds(dick.Value<long>("duration"))
+                                                };
+                                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter()
+                                                    .GetResult();
+                                                args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id"))
+                                                    .GetAwaiter().GetResult();
+                                                args.Whom = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter()
+                                                    .GetResult();
+                                                return args;
+                                            }
+                                        case "lift_ban":
+                                            {
+                                                var args = new GroupMemberUnmutedEventArgs();
+                                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter()
+                                                    .GetResult();
+                                                args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id"))
+                                                    .GetAwaiter().GetResult();
+                                                args.Whom = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter()
+                                                    .GetResult();
+                                                return args;
+                                            }
+                                        default:
+                                            return null;
+                                    }
+                                }
+                            case "group_decrease":
+                                {
+                                    Self me = GetSelfInfoAsync().GetAwaiter().GetResult();
+                                    switch (dick.Value<string>("sub_type"))
+                                    {
+                                        case "kick_me":
+                                            {
+                                                var args = new GroupLeftEventArgs();
+                                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter()
+                                                    .GetResult();
+                                                args.IsKicked = true;
+                                                args.Who = GetMemberInfoAsync(args.Group, me.Identity).GetAwaiter().GetResult();
+                                                args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id"))
+                                                    .GetAwaiter().GetResult();
+                                                return args;
+                                            }
+                                        case "kick":
+                                            {
+                                                var args = new GroupLeftEventArgs();
+                                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter()
+                                                    .GetResult();
+                                                args.IsKicked = true;
+                                                args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id"))
+                                                    .GetAwaiter().GetResult();
+                                                args.Who = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter()
+                                                    .GetResult();
+                                                return args;
+                                            }
+                                        case "leave":
+                                            {
+                                                var args = new GroupLeftEventArgs();
+                                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter()
+                                                    .GetResult();
+                                                args.IsKicked = false;
+                                                args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id"))
+                                                    .GetAwaiter().GetResult();
+                                                args.Who = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter()
+                                                    .GetResult();
+                                                return args;
+                                            }
+                                        default:
+                                            return null;
+                                    }
+                                }
+                            case "group_increase":
+                                {
+                                    switch (dick.Value<string>("sub_type"))
+                                    {
+                                        case "invite":
+                                        case "approve":
+                                            {
+                                                var args = new GroupJoinedEventArgs();
+                                                args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter()
+                                                    .GetResult();
+                                                args.Who = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter()
+                                                    .GetResult();
+                                                args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id"))
+                                                    .GetAwaiter().GetResult();
+                                                return args;
+                                            }
+                                        default:
+                                            return null;
+                                    }
+                                }
+                            case "group_recall":
+                                {
+                                    var args = new GroupRecallEventArgs();
+                                    args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
+                                    args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter()
+                                        .GetResult();
+                                    args.WhoseMessage = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter()
+                                        .GetResult();
+                                    args.MessageId = dick.Value<long>("message_id");
+                                    return args;
+                                }
+                            case "friend_recall":
+                                {
+                                    var args = new FriendRecallEventArgs();
+                                    args.MessageId = dick.Value<long>("message_id");
+                                    args.WhoseMessage = GetFriendInfoAsync(dick.Value<long>("user_id")).GetAwaiter()
                                         .GetResult();
                                     return args;
                                 }
-                                case "lift_ban":
+                            case "notify":
                                 {
-                                    var args = new GroupMemberUnmutedEventArgs();
-                                    args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter()
-                                        .GetResult();
-                                    args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id"))
-                                        .GetAwaiter().GetResult();
-                                    args.Whom = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter()
-                                        .GetResult();
-                                    return args;
+                                    switch (dick.Value<string>("sub_type"))
+                                    {
+                                        case "poke":
+                                            {
+                                                // TODO: 支持 Poke
+                                                return null;
+                                            }
+                                        case "honor":
+                                            {
+                                                // 不需要支持 群荣誉变更
+                                                return null;
+                                            }
+                                        default:
+                                            return null;
+                                    }
                                 }
-                                default:
-                                    return null;
-                            }
+                            default:
+                                return null;
                         }
-                        case "group_decrease":
-                        {
-                            Self me = GetSelfInfoAsync().GetAwaiter().GetResult();
-                            switch (dick.Value<string>("sub_type"))
-                            {
-                                case "kick_me":
-                                {
-                                    var args = new GroupLeftEventArgs();
-                                    args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter()
-                                        .GetResult();
-                                    args.IsKicked = true;
-                                    args.Who = GetMemberInfoAsync(args.Group, me.Identity).GetAwaiter().GetResult();
-                                    args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id"))
-                                        .GetAwaiter().GetResult();
-                                    return args;
-                                }
-                                case "kick":
-                                {
-                                    var args = new GroupLeftEventArgs();
-                                    args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter()
-                                        .GetResult();
-                                    args.IsKicked = true;
-                                    args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id"))
-                                        .GetAwaiter().GetResult();
-                                    args.Who = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter()
-                                        .GetResult();
-                                    return args;
-                                }
-                                case "leave":
-                                {
-                                    var args = new GroupLeftEventArgs();
-                                    args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter()
-                                        .GetResult();
-                                    args.IsKicked = false;
-                                    args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id"))
-                                        .GetAwaiter().GetResult();
-                                    args.Who = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter()
-                                        .GetResult();
-                                    return args;
-                                }
-                                default:
-                                    return null;
-                            }
-                        }
-                        case "group_increase":
-                        {
-                            switch (dick.Value<string>("sub_type"))
-                            {
-                                case "invite":
-                                case "approve":
-                                {
-                                    var args = new GroupJoinedEventArgs();
-                                    args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter()
-                                        .GetResult();
-                                    args.Who = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter()
-                                        .GetResult();
-                                    args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id"))
-                                        .GetAwaiter().GetResult();
-                                    return args;
-                                }
-                                default:
-                                    return null;
-                            }
-                        }
-                        case "group_recall":
-                        {
-                            var args = new GroupRecallEventArgs();
-                            args.Group = GetGroupInfoAsync(dick.Value<long>("group_id")).GetAwaiter().GetResult();
-                            args.Operator = GetMemberInfoAsync(args.Group, dick.Value<long>("operator_id")).GetAwaiter()
-                                .GetResult();
-                            args.WhoseMessage = GetMemberInfoAsync(args.Group, dick.Value<long>("user_id")).GetAwaiter()
-                                .GetResult();
-                            args.MessageId = dick.Value<long>("message_id");
-                            return args;
-                        }
-                        case "friend_recall":
-                        {
-                            var args = new FriendRecallEventArgs();
-                            args.MessageId = dick.Value<long>("message_id");
-                            args.WhoseMessage = GetFriendInfoAsync(dick.Value<long>("user_id")).GetAwaiter()
-                                .GetResult();
-                            return args;
-                        }
-                        case "notify":
-                        {
-                            switch (dick.Value<string>("sub_type"))
-                            {
-                                case "poke":
-                                {
-                                    // TODO: 支持 Poke
-                                    return null;
-                                }
-                                case "honor":
-                                {
-                                    // 不需要支持 群荣誉变更
-                                    return null;
-                                }
-                                default:
-                                    return null;
-                            }
-                        }
-                        default:
-                            return null;
                     }
-                }
                 case "request":
-                {
-                    switch (dick.Value<string>("request_type"))
                     {
-                        case "friend":
+                        switch (dick.Value<string>("request_type"))
                         {
-                            var args = new FriendRequestEventArgs()
-                            {
-                                Who = dick.Value<long>("user_id"),
-                                Comment = dick.Value<string>("comment"),
-                                Flag = dick.Value<string>("flag")
-                            };
-                            return args;
+                            case "friend":
+                                {
+                                    var args = new FriendRequestEventArgs()
+                                    {
+                                        Who = dick.Value<long>("user_id"),
+                                        Comment = dick.Value<string>("comment"),
+                                        Flag = dick.Value<string>("flag")
+                                    };
+                                    return args;
+                                }
+                            case "group" when dick.Value<string>("sub_type") == "add":
+                                {
+                                    var args = new GroupRequestEventArgs()
+                                    {
+                                        Who = dick.Value<long>("user_id"),
+                                        Comment = dick.Value<string>("comment"),
+                                        GroupId = dick.Value<long>("group_id"),
+                                        Flag = dick.Value<string>("flag")
+                                    };
+                                    return args;
+                                }
+                            default:
+                                return null;
                         }
-                        case "group" when dick.Value<string>("sub_type") == "add":
-                        {
-                            var args = new GroupRequestEventArgs()
-                            {
-                                Who = dick.Value<long>("user_id"),
-                                Comment = dick.Value<string>("comment"),
-                                GroupId = dick.Value<long>("group_id"),
-                                Flag = dick.Value<string>("flag")
-                            };
-                            return args;
-                        }
+                    }
+                case "meta_event":
+                    switch (dick.Value<string>("meta_event_type"))
+                    {
+                        case "heartbeat":
+                        // TODO: 特殊处理
+                            return null;
                         default:
                             return null;
                     }
-                }
                 default:
                     // discard
                     return null;
@@ -384,7 +393,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                 .FetchAsync();
             return messageId;
         }
-        
+
         public async Task<long> SendFriendForwardMessageAsync(Friend friend, MessageChain forward)
         {
             long messageId = -1;
@@ -589,7 +598,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                     group_id = id
                 })
                 .ForJsonResult<JObject>(obj => { result.Name = obj["data"].Value<string>("group_name"); })
-                .WhenException((Exception e) => {})
+                .WhenException((Exception e) => { })
                 .FetchAsync();
             var task2 = GetGroupMembersAsync(result);
             await task1;
@@ -648,7 +657,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                     member.Title = obj["data"].Value<string>("title");
                     member.Role = Ext.OfRole(obj["data"].Value<string>("role"));
                 })
-                .WhenException((Exception e) => {})
+                .WhenException((Exception e) => { })
                 .FetchAsync();
             return member;
         }
