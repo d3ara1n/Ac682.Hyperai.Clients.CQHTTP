@@ -1,0 +1,13 @@
+# 默认忽略的文件
+/shelf/
+/workspace.xml
+# Rider ignored files
+/contentModel.xml
+/projectSettingsUpdater.xml
+/.idea.Ac682.Hyperai.Clients.CQHTTP.iml
+/modules.xml
+# 数据源本地存储已忽略文件
+/../../../../../../../../:\Users\zqy02\Projects\Ac682.Hyperai.Clients.CQHTTP\.idea\.idea.Ac682.Hyperai.Clients.CQHTTP\.idea/dataSources/
+/dataSources.local.xml
+# 基于编辑器的 HTTP 客户端请求
+/httpRequests/
