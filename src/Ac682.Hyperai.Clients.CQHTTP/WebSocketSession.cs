@@ -376,6 +376,7 @@ namespace Ac682.Hyperai.Clients.CQHTTP
                     }
                 default:
                     // discard
+                    _logger.LogWarning("Unrecognized event: {Event}", postType);
                     return null;
             }
         }

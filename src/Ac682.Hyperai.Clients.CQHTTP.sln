@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30413.136
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ac682.Hyperai.Clients.CQHTTP", "Ac682.Hyperai.Clients.CQHTTP\Ac682.Hyperai.Clients.CQHTTP.csproj", "{DCD59CE6-F6A5-443C-9628-CD57AE513245}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ac682.Hyperai.Clients.CQHTTP.Tests", "Ac682.Hyperai.Clients.CQHTTP.Tests\Ac682.Hyperai.Clients.CQHTTP.Tests.csproj", "{2AE402B9-F429-4791-933D-AB6A01B096D7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ac682.Hyperai.Clients.CQHTTP.Tests", "Ac682.Hyperai.Clients.CQHTTP.Tests\Ac682.Hyperai.Clients.CQHTTP.Tests.csproj", "{7D823D0B-7F5E-4BA5-A9BA-D1FE4B945748}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{DCD59CE6-F6A5-443C-9628-CD57AE513245}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DCD59CE6-F6A5-443C-9628-CD57AE513245}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DCD59CE6-F6A5-443C-9628-CD57AE513245}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2AE402B9-F429-4791-933D-AB6A01B096D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2AE402B9-F429-4791-933D-AB6A01B096D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2AE402B9-F429-4791-933D-AB6A01B096D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2AE402B9-F429-4791-933D-AB6A01B096D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D823D0B-7F5E-4BA5-A9BA-D1FE4B945748}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D823D0B-7F5E-4BA5-A9BA-D1FE4B945748}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D823D0B-7F5E-4BA5-A9BA-D1FE4B945748}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D823D0B-7F5E-4BA5-A9BA-D1FE4B945748}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
